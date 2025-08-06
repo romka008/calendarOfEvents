@@ -1,60 +1,61 @@
 package calendar
 
 import (
-	"errors"
 	"fmt"
 
-	"github.com/araddon/dateparse"
 	"github.com/romka008/app/events"
 )
 
-var calendarEvents = make(map[string]events.Event) // мапа событий
+type Calendar struct {
+	calendarEvents map[string]*events.Event
+}
 
-func AddEvent(title string, date string) (events.Event, error) { // принимаем события в аргументе
+func NewCalendar() *Calendar {
+
+	var calendar = Calendar{calendarEvents: make(map[string]*events.Event)}
+	return &calendar
+
+}
+
+func (c *Calendar) AddEvent(title string, date string) (*events.Event, error) { // принимаем события в аргументе
 	e, err := events.NewEvent(title, date)
 	if err != nil {
-		fmt.Println("Ошибка создания события:", err)
+		return &events.Event{}, err
 	}
 
-	calendarEvents[e.ID] = e                         // добавляем событие используя уникальный ID как ключ
+	c.calendarEvents[e.ID] = e                       // добавляем событие используя уникальный ID как ключ
 	fmt.Printf("Добавлено событие '%s' \n", e.Title) // сообщаем о результате
 	return e, nil
 }
 
-func DeleteEvent(ID string) { // принимаем события в аргументе
-	_, ok := calendarEvents[ID]
-	if ok {
-		delete(calendarEvents, ID)
-		fmt.Println("Событие", ID, " удалено") // выводим лог об удалении
-
-	} else {
-		fmt.Println("Событие", ID, "не найдено в календаре")
+func (c *Calendar) DeleteEvent(ID string) { // принимаем события в аргументе
+	_, exists := c.calendarEvents[ID]
+	if exists {
+		delete(c.calendarEvents, ID)
+		fmt.Println("Событие", ID, "удалено") // выводим лог об удалении
+		return
 	}
+	fmt.Println("Событие", ID, "не найдено в календаре")
+
 }
 
-func EditEvent(key string, title string, dateStr string) (events.Event, error) { // принимаем события в аргументе
-	_, ok := calendarEvents[key]
-	t, err := dateparse.ParseAny(dateStr)
+func (c *Calendar) EditEvent(id string, title string, dateStr string) error { // принимаем события в аргументе
+	e, exists := c.calendarEvents[id]
+	if !exists {
+		return fmt.Errorf("событие с id='%s' не найдено в календаре", id)
+	}
 
+	err := e.Update(title, dateStr) // обновляем e через его метод
 	if err != nil {
-		return events.Event{}, errors.New("неверный формат даты")
+		return err
 	}
-	if !events.IsValidTitle(title) {
-		return events.Event{}, errors.New("заголовок события не соответствует условиям (длина: 3-50)")
-	}
-	if ok {
-		event := events.Event{ID: calendarEvents[key].ID, Title: title, StartAt: t}
-		calendarEvents[key] = event
-		fmt.Println("Событие", key, "изменено") // выводим лог об удалении
-		return event, nil
+	fmt.Printf("Событие с id='%s' изменено \n", id)
 
-	} else {
-		return events.Event{}, fmt.Errorf("событие %s не найдено в календаре", key)
-	}
+	return nil
 }
 
-func ShowEvents() {
-	for _, v := range calendarEvents {
+func (c *Calendar) ShowEvents() {
+	for _, v := range c.calendarEvents {
 		fmt.Println(v.Title+" - ", v.StartAt.Format("2006/01/02"))
 	}
 }
