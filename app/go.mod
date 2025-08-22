@@ -1,4 +1,4 @@
-module github.com/romka008/app
+module github.com/romka008/calendarOfEvents
 
 go 1.24.5
 
